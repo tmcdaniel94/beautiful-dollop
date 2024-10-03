@@ -1,15 +1,19 @@
 const inquirer = require('inquirer');
-const sequelize = require('./config/connection')
+const pool = require('./config/connection')
 
-sequelize.connect();
+pool.connect(err => {
+    if (err) throw err;
+    console.log('Connected to database!');
+    employeeDB();
+});
 
+const employeeDB = function () {
 inquirer
   .prompt([
-
     { 
       type: 'list',
+      name: 'prompt',
       message: 'What would you like to do?',
-      name: 'home',
       choices: [
         'View all departments',
         'View all roles',
@@ -17,15 +21,25 @@ inquirer
         'Add a department',
         'Add an employee',
         'Update an employee role'
-      ]
-    }
-  ])
-  .then((answers) => {
-    if (answers.home === 'View all departments') {
-        return (sequelize)
-    }
-    console.log(answers);
+      ]}
+  ]).then((answers) => {
+    if (answers.prompt === 'View all departments') {
+        pool.query('select * from department', (err, result) => {
+            if (err) throw err;
+            console.log("Viewing all departments: ");
+            console.table(result);
+            employeeDB();
+        });
+    } else if (answers.prompt === 'View all roles') {
+        pool.query('select * from roles', (err, result) => {
+            if (err) throw err;
+            console.log("Viewing all roles: ");
+            console.table(result);
+            employeeDB();
+        });
+    } 
   });
+};
 //   .catch((error) => {
 //     if (error.isTtyError) {
 //       // Prompt couldn't be rendered in the current environment
