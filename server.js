@@ -1,9 +1,13 @@
 const inquirer = require('inquirer');
+const sequelize = require('./config/connection')
+
+sequelize.connect();
 
 inquirer
   .prompt([
-    /* Pass your questions in here */
-    { type: 'list',
+
+    { 
+      type: 'list',
       message: 'What would you like to do?',
       name: 'home',
       choices: [
@@ -17,7 +21,9 @@ inquirer
     }
   ])
   .then((answers) => {
-    // Use user feedback for... whatever!!
+    if (answers.home === 'View all departments') {
+        return (sequelize)
+    }
     console.log(answers);
   });
 //   .catch((error) => {
