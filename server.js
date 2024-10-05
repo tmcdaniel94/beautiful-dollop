@@ -27,17 +27,24 @@ inquirer
         pool.query('SELECT * FROM department', (err, result) => {
             if (err) throw err;
             console.log("Viewing all departments: ");
-            console.table(result);
+            console.table(result.rows);
             employeeDB();
         });
     } else if (answers.prompt === 'View all roles') {
         pool.query('SELECT * FROM roles', (err, result) => {
             if (err) throw err;
             console.log("Viewing all roles: ");
-            console.table(result);
+            console.table(result.rows);
             employeeDB();
         });
-    } 
+    } else if (answers.prompt === 'View all employees') {
+        pool.query('SELECT * FROM employee', (err, result) => {
+            if (err) throw err;
+            console.log("Viewing all employees: ");
+            console.table(result.rows);
+            employeeDB();
+        });
+    }
   });
 };
 //   .catch((error) => {

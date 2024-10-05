@@ -17,5 +17,5 @@ VALUES ('Robert', 'Berry', 4, 1),
        ('Emily', 'Smith', 2, 1),
        ('Mateo', 'Sanchez', 1, null),
        ('Rachel', 'Martinez', 3, null),
-       ('Lindsey', 'Burton', 5, null)
+       ('Lindsey', 'Burton', 5, null),
        ('Marina', 'Ingalls', 6, 5);
