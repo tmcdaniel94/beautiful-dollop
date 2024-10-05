@@ -122,8 +122,75 @@ inquirer
             })
         });
     } else if (answers.prompt === 'Add an employee') {
-        
-    }
+        pool.query(`SELECT * FROM employee, role`, (err, result) => {
+            if (err) throw err;
+
+            inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'first_name',
+                    message: 'Input employee first name',
+                    validate: addFirstName => {
+                        if (addFirstName) {
+                            return true;
+                        } else {
+                            console.log('Input first name');
+                            return false;
+                        }
+                    }
+                },
+                {
+                    type: 'input',
+                    name: 'last_name',
+                    message: 'Input employee last name',
+                    validate: addLastName => {
+                        if (addLastName) {
+                            return true;
+                        } else {
+                            console.log('Input last name');
+                            return false;
+                        }
+                    }
+                },
+                {
+                    type: 'list',
+                    name: 'role',
+                    message: 'Select employee role',
+                    choices: () => {
+                        const employeeRoleArray = [];
+                        for (var i = 0; i < result.length; i++) {
+                            employeeRoleArray.push(result[i].title);
+                        }
+                        var newArray = [...new Set(array)];
+                        return newArray;
+                    }
+                }, 
+                {
+                    type: 'input',
+                    name: 'manager',
+                    message: 'Input the employees manager',
+                    validate: addManager => {
+                        if (addManager) {
+                            return true;
+                        } else {
+                            console.log('Input manager');
+                            return false;
+                        }
+                    }
+                }
+            ]).then((answers) => {
+                for (var i = 0; i < result.length; i++) {
+                    if (result[i].title === answers.role) {
+                        var role = result[i];
+                    }
+                }
+                pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)`, [answers.first_name, answers.last_name, role.id, answers.manager.id], (err, result) => {
+                    if (err) throw err;
+                    console.log(`${answers.first_name} ${answers.last_name} added to the database.`)
+                    employeeDB();
+                });
+            })
+        });
     }
   });
 };
