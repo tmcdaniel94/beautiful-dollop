@@ -24,14 +24,14 @@ inquirer
       ]}
   ]).then((answers) => {
     if (answers.prompt === 'View all departments') {
-        pool.query('select * from department', (err, result) => {
+        pool.query('SELECT * FROM department', (err, result) => {
             if (err) throw err;
             console.log("Viewing all departments: ");
             console.table(result);
             employeeDB();
         });
     } else if (answers.prompt === 'View all roles') {
-        pool.query('select * from roles', (err, result) => {
+        pool.query('SELECT * FROM roles', (err, result) => {
             if (err) throw err;
             console.log("Viewing all roles: ");
             console.table(result);
