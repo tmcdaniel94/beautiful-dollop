@@ -20,7 +20,8 @@ inquirer
         'View all employees',
         'Add a department',
         'Add an employee',
-        'Update an employee role'
+        'Update an employee role',
+        'Log out'
       ]}
   ]).then((answers) => {
     if (answers.prompt === 'View all departments') {
@@ -58,9 +59,13 @@ inquirer
                     return false;
                 }
               }
-            }]).then((answers) => {
-                pool.query(`INSERT INTO department (name) VALUES (?)`, [answers.department], (err, result) =>{
-                    if (err) throw err;
+            }
+            ]).then((answers) => {
+                pool.query(`INSERT INTO department (name) VALUES (?)`, [answers.department], (err, result) => {
+                    if (err) {
+                        console.log('Error inserting department: ', err);
+                        return;
+                    } 
                     console.log(`${answers.department} added to the database`)
                     employeeDB();
                 });
@@ -189,11 +194,65 @@ inquirer
                     console.log(`${answers.first_name} ${answers.last_name} added to the database.`)
                     employeeDB();
                 });
-            })
+            });
         });
+    } else if (answers.prompt === 'Update an employee role') {
+        pool.query(`SELECT * FROM employee, role`, (err, result) => {
+            inquirer.prompt([
+                {
+                    type: 'list',
+                    name: 'employee',
+                    message: 'Choose an employee to update',
+                    choices: () => {
+                        const array = [];
+                        for (var i = 0; i < result.length; i++) {
+                            array.push(result[i].last_name);
+                    }
+                    const employeeArray = [...new Set(array)];
+                    return employeeArray;
+                    }
+                },
+                {
+                    type: 'list',
+                    name: 'role',
+                    message: 'Select a new role for the employee',
+                    choices: () => {
+                        const array = [];
+                        for (var i = 0; i < result.length; i++) {
+                            array.push(result[i].title);
+                    }
+                        const roleArray = [...new Set(array)];
+                        return roleArray;
+                    }
+                }
+            ]).then((answers) => {
+                for (var i = 0; i < result.length; i++) {
+                    if (result[i].last_name === answers.employee) {
+                        var name = result[i];
+                    }
+                }
+
+                for (var i = 0; i < result.length; i++) {
+                    if (result[i].title === answers.role) {
+                        var role = result[i];
+                    }
+                }
+                pool.query(`UPDATE employee SET ? WHERE ?`,  [{role_id: role}, {last_name: name}], (err, result) => {
+                    if (err) throw err;
+                    console.log(`${answers.employee} has been updated`);
+                    employeeDB();
+                });
+            });
+        });
+    } else if (answers.prompt === 'Log out') {
+        pool.end();
+        console.log('Logged out');
     }
-  });
+}); 
 };
+
+
+
 //   .catch((error) => {
 //     if (error.isTtyError) {
 //       // Prompt couldn't be rendered in the current environment
