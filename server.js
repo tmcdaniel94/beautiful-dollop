@@ -1,5 +1,5 @@
 const inquirer = require('inquirer');
-const pool = require('./config/connection')
+const { pool, fetchRoles } = require('./config/connection')
 
 pool.connect(err => {
     if (err) throw err;
@@ -8,6 +8,7 @@ pool.connect(err => {
 });
 
 const employeeDB = function () {
+
 inquirer
   .prompt([
     { 
@@ -61,7 +62,7 @@ inquirer
               }
             }
             ]).then((answers) => {
-                pool.query(`INSERT INTO department (name) VALUES (?)`, [answers.department], (err, result) => {
+                pool.query(`INSERT INTO department (name) VALUES ($1)`, [answers.department], (err, result) => {
                     if (err) {
                         console.log('Error inserting department: ', err);
                         return;
@@ -71,8 +72,15 @@ inquirer
                 });
         })
     } else if (answers.prompt === 'Add a role') {
+        async function promptForRole() {
+            const rolesArray = await fetchRoles();
+
         pool.query(`SELECT * FROM department`, (err, result) => {
             if (err) throw err;
+            console.log('View all departments');
+            console.table(result.rows);
+            employeeDB();
+
             inquirer.prompt([
                 {
                     type: 'list',
@@ -105,11 +113,11 @@ inquirer
                     name: 'department',
                     message: 'Choose the department the role belongs to',
                     choices: () => {
-                        const departmentChoicesArray = [];
-                        for (var i = 0; i < result.length; i++) {
-                            departmentChoicesArray.push(result[i].name);
-                        }
-                        return departmentChoicesArray;
+                    //     const departmentChoicesArray = [];
+                    //     for (var i = 0; i < result.length; i++) {
+                    //         departmentChoicesArray.push(result[i].name);
+                    //     }
+                    //     return departmentChoicesArray;
                     }
                 }
             ]).then((answers) => {
@@ -119,22 +127,26 @@ inquirer
                     }
                 }
 
-                pool.query(`INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)`, [answers.role, answers.salary, department.id], (err, result) => {
+                pool.query(`INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3)`, [answers.role, answers.salary, department.id], (err, result) => {
                     if (err) throw err;
                     console.log(`${answers.role} added to the database`)
                     employeeDB();
                 });
             })
         });
+    }
     } else if (answers.prompt === 'Add an employee') {
-        pool.query(`SELECT * FROM employee, role`, (err, result) => {
+        async function promptForRole() {
+            const rolesArray = await fetchRoles();
+
+        pool.query(`SELECT * FROM employee, roles`, (err, result) => {
             if (err) throw err;
 
             inquirer.prompt([
                 {
                     type: 'input',
                     name: 'first_name',
-                    message: 'Input employee first name',
+                    message: 'Input employee first name:',
                     validate: addFirstName => {
                         if (addFirstName) {
                             return true;
@@ -147,7 +159,7 @@ inquirer
                 {
                     type: 'input',
                     name: 'last_name',
-                    message: 'Input employee last name',
+                    message: 'Input employee last name:',
                     validate: addLastName => {
                         if (addLastName) {
                             return true;
@@ -160,15 +172,16 @@ inquirer
                 {
                     type: 'list',
                     name: 'role',
-                    message: 'Select employee role',
-                    choices: () => {
-                        const employeeRoleArray = [];
-                        for (var i = 0; i < result.length; i++) {
-                            employeeRoleArray.push(result[i].title);
-                        }
-                        var newArray = [...new Set(array)];
-                        return newArray;
-                    }
+                    message: 'Select employee role:',
+                    choices: rolesArray
+                    //     {
+                    //     const employeeRoleArray = [];
+                    //     for (var i = 0; i < result.length; i++) {
+                    //         employeeRoleArray.push(result[i].title);
+                    //     }
+                    //     var newArray = [...new Set(employeeRoleArray)];
+                    //     return newArray;
+                    // }
                 }, 
                 {
                     type: 'input',
@@ -189,13 +202,14 @@ inquirer
                         var role = result[i];
                     }
                 }
-                pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)`, [answers.first_name, answers.last_name, role.id, answers.manager.id], (err, result) => {
+                pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)`, [answers.first_name, answers.last_name, role.id, answers.manager.id], (err, result) => {
                     if (err) throw err;
                     console.log(`${answers.first_name} ${answers.last_name} added to the database.`)
                     employeeDB();
                 });
             });
         });
+    }
     } else if (answers.prompt === 'Update an employee role') {
         pool.query(`SELECT * FROM employee, role`, (err, result) => {
             inquirer.prompt([
