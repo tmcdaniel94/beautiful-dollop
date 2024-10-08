@@ -20,6 +20,7 @@ inquirer
         'View all roles',
         'View all employees',
         'Add a department',
+        'Add a role',
         'Add an employee',
         'Update an employee role',
         'Log out'
@@ -72,14 +73,8 @@ inquirer
                 });
         })
     } else if (answers.prompt === 'Add a role') {
-        async function promptForRole() {
-            const rolesArray = await fetchRoles();
 
-        pool.query(`SELECT * FROM department`, (err, result) => {
-            if (err) throw err;
-            console.log('View all departments');
-            console.table(result.rows);
-            employeeDB();
+        pool.query(`SELECT * FROM roles`, (err, result) => {
 
             inquirer.prompt([
                 {
@@ -134,130 +129,123 @@ inquirer
                 });
             })
         });
-    }
     } else if (answers.prompt === 'Add an employee') {
-        async function promptForRole() {
-            const rolesArray = await fetchRoles();
 
-        pool.query(`SELECT * FROM employee, roles`, (err, result) => {
-            if (err) throw err;
-
-            inquirer.prompt([
-                {
-                    type: 'input',
-                    name: 'first_name',
-                    message: 'Input employee first name:',
-                    validate: addFirstName => {
-                        if (addFirstName) {
-                            return true;
-                        } else {
-                            console.log('Input first name');
-                            return false;
+        pool.query(`SELECT * FROM roles`, (err, results) => {
+            let resultsArray = results.rows.map(result => result.title)
+            pool.query(`SELECT * FROM employee`, (err, result) => {
+                if (err) throw err;
+                console.log('View all employees');
+                console.table(result.rows);
+    
+                inquirer.prompt([
+                    {
+                        type: 'input',
+                        name: 'first_name',
+                        message: 'Input employee first name:',
+                        validate: addFirstName => {
+                            if (addFirstName) {
+                                return true;
+                            } else {
+                                console.log('Input first name');
+                                return false;
+                            }
+                        }
+                    },
+                    {
+                        type: 'input',
+                        name: 'last_name',
+                        message: 'Input employee last name:',
+                        validate: addLastName => {
+                            if (addLastName) {
+                                return true;
+                            } else {
+                                console.log('Input last name');
+                                return false;
+                            }
+                        }
+                    },
+                    {
+                        type: 'list',
+                        name: 'role',
+                        message: 'Select employee role:',
+                        choices: resultsArray
+                    }, 
+                    {
+                        type: 'input',
+                        name: 'manager',
+                        message: 'Input the employees manager',
+                        validate: addManager => {
+                            if (addManager) {
+                                return true;
+                            } else {
+                                console.log('Input manager');
+                                return false;
+                            }
                         }
                     }
-                },
-                {
-                    type: 'input',
-                    name: 'last_name',
-                    message: 'Input employee last name:',
-                    validate: addLastName => {
-                        if (addLastName) {
-                            return true;
-                        } else {
-                            console.log('Input last name');
-                            return false;
-                        }
-                    }
-                },
-                {
-                    type: 'list',
-                    name: 'role',
-                    message: 'Select employee role:',
-                    choices: rolesArray
-                    //     {
-                    //     const employeeRoleArray = [];
-                    //     for (var i = 0; i < result.length; i++) {
-                    //         employeeRoleArray.push(result[i].title);
-                    //     }
-                    //     var newArray = [...new Set(employeeRoleArray)];
-                    //     return newArray;
-                    // }
-                }, 
-                {
-                    type: 'input',
-                    name: 'manager',
-                    message: 'Input the employees manager',
-                    validate: addManager => {
-                        if (addManager) {
-                            return true;
-                        } else {
-                            console.log('Input manager');
-                            return false;
-                        }
-                    }
-                }
-            ]).then((answers) => {
-                for (var i = 0; i < result.length; i++) {
-                    if (result[i].title === answers.role) {
-                        var role = result[i];
-                    }
-                }
-                pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)`, [answers.first_name, answers.last_name, role.id, answers.manager.id], (err, result) => {
-                    if (err) throw err;
-                    console.log(`${answers.first_name} ${answers.last_name} added to the database.`)
-                    employeeDB();
+                ]).then((answers) => {
+                    let roleId = results.rows.filter(result => result.title == answers.role)[0].id;
+                    pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)`, [answers.first_name, answers.last_name, roleId, answers.manager.id], (err, result) => {
+                        if (err) throw err;
+                        console.log(`${answers.first_name} ${answers.last_name} added to the database.`)
+                        employeeDB();
+                    });
                 });
             });
-        });
-    }
+    
+        })
+
     } else if (answers.prompt === 'Update an employee role') {
-        pool.query(`SELECT * FROM employee, role`, (err, result) => {
-            inquirer.prompt([
-                {
-                    type: 'list',
-                    name: 'employee',
-                    message: 'Choose an employee to update',
-                    choices: () => {
-                        const array = [];
-                        for (var i = 0; i < result.length; i++) {
-                            array.push(result[i].last_name);
-                    }
-                    const employeeArray = [...new Set(array)];
-                    return employeeArray;
-                    }
-                },
-                {
-                    type: 'list',
-                    name: 'role',
-                    message: 'Select a new role for the employee',
-                    choices: () => {
-                        const array = [];
-                        for (var i = 0; i < result.length; i++) {
-                            array.push(result[i].title);
-                    }
-                        const roleArray = [...new Set(array)];
-                        return roleArray;
-                    }
-                }
-            ]).then((answers) => {
-                for (var i = 0; i < result.length; i++) {
-                    if (result[i].last_name === answers.employee) {
-                        var name = result[i];
-                    }
-                }
 
-                for (var i = 0; i < result.length; i++) {
-                    if (result[i].title === answers.role) {
-                        var role = result[i];
+        pool.query(`SELECT * FROM employee`, (err, result) => {
+            let resultsArray = results.rows.map(result => result.title)
+
+            pool.query(`SELECT * FROM roles`, (err, result) => {
+                inquirer.prompt([
+                    {
+                        type: 'list',
+                        name: 'employee',
+                        message: 'Choose an employee to update',
+                        choices: resultsArray
+                    },
+                    {
+                        type: 'list',
+                        name: 'role',
+                        message: 'Select a new role for the employee',
+                        choices: () => {
+                            const array = [];
+                            for (var i = 0; i < result.length; i++) {
+                                array.push(result[i].title);
+                        }
+                            const roleArray = [...new Set(array)];
+                            return roleArray;
+                        }
                     }
-                }
-                pool.query(`UPDATE employee SET ? WHERE ?`,  [{role_id: role}, {last_name: name}], (err, result) => {
-                    if (err) throw err;
-                    console.log(`${answers.employee} has been updated`);
-                    employeeDB();
+                ]).then((answers) => {
+                    let roleId = results.rows.filter(result => result.title == answers.role)[0].id;
+                    pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)`, [answers.first_name, answers.last_name, roleId, answers.manager.id], (err, result) => {
+
+                    // for (var i = 0; i < result.length; i++) {
+                    //     if (result[i].last_name === answers.employee) {
+                    //         var name = result[i];
+                    //     }
+                    // }
+    
+                    // for (var i = 0; i < result.length; i++) {
+                    //     if (result[i].title === answers.role) {
+                    //         var role = result[i];
+                    //     }
+                    // }
+                    pool.query(`UPDATE employee SET ? WHERE ?`,  [{role_id: role}, {last_name: name}], (err, result) => {
+                        if (err) throw err;
+                        console.log(`${answers.employee} has been updated`);
+                        employeeDB();
+                    });
                 });
             });
-        });
+        })
+    })
     } else if (answers.prompt === 'Log out') {
         pool.end();
         console.log('Logged out');
