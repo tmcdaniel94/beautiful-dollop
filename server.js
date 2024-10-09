@@ -52,12 +52,12 @@ inquirer
             { 
               type: 'input',
               name: 'department',
-              message: 'Input the name of the department',
+              message: 'Input the name of the department: ',
               validate: addDepartment => {
                 if (addDepartment) {
                     return true;
                 } else {
-                    console.log('Please input a department');
+                    console.log('Please input a department.');
                     return false;
                 }
               }
@@ -68,24 +68,30 @@ inquirer
                         console.log('Error inserting department: ', err);
                         return;
                     } 
-                    console.log(`${answers.department} added to the database`)
+                    console.log(`${answers.department} added to the database.`)
                     employeeDB();
                 });
         })
     } else if (answers.prompt === 'Add a role') {
+        
+        pool.query(`SELECT * FROM department`, (err, results) => {
+            let resultsArray = results.rows.map(result => result.name)
 
-        pool.query(`SELECT * FROM roles`, (err, result) => {
+            pool.query(`SELECT * FROM roles`, (err, result) => {
+                if (err) throw err;
+                console.log('View all roles: ');
+                console.table(result.rows);
 
             inquirer.prompt([
                 {
-                    type: 'list',
+                    type: 'input',
                     name: 'role',
-                    message: 'Input the name of the role',
+                    message: 'Input the name of the role: ',
                     validate: addRoleName => {
                         if (addRoleName) {
                             return true;
                         } else {
-                            console.log('Input name of the role');
+                            console.log('Input name of the role: ');
                             return false;
                         }
                     }
@@ -93,12 +99,12 @@ inquirer
                 {
                     type: 'input',
                     name: 'salary',
-                    message: 'Input the salary of the role',
+                    message: 'Input the salary of the role: ',
                     validate: addSalary => {
-                        if (addSalary) {
+                        if (addSalary && !isNaN(addSalary)) {
                             return true;
                         } else {
-                            console.log('Input the role salary');
+                            console.log('Input the role salary.');
                             return false;
                         }
                     }
@@ -106,48 +112,42 @@ inquirer
                 {
                     type: 'list',
                     name: 'department',
-                    message: 'Choose the department the role belongs to',
-                    choices: () => {
-                    //     const departmentChoicesArray = [];
-                    //     for (var i = 0; i < result.length; i++) {
-                    //         departmentChoicesArray.push(result[i].name);
-                    //     }
-                    //     return departmentChoicesArray;
-                    }
+                    message: 'Choose the department the role belongs to:',
+                    choices: resultsArray
                 }
             ]).then((answers) => {
-                for (var i = 0; i < result.length; i++) {
-                    if (result[i].name === answers.department) {
-                        var department = result[i];
-                    }
-                }
+                let department = results.rows.find(dept => dept.name == answers.department);
+                let departmentId = department ? department.id : null;
 
-                pool.query(`INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3)`, [answers.role, answers.salary, department.id], (err, result) => {
-                    if (err) throw err;
-                    console.log(`${answers.role} added to the database`)
-                    employeeDB();
-                });
+                if (departmentId) {
+                    pool.query(`INSERT INTO roles (title, salary, department_id) VALUES ($1, $2, $3)`, [answers.role, answers.salary, departmentId], (err, result) => {
+                        if (err) throw err;
+                        console.log(`${answers.role} added to the database.`);
+                        employeeDB();
+                 });
+                }
             })
         });
+    })
     } else if (answers.prompt === 'Add an employee') {
 
         pool.query(`SELECT * FROM roles`, (err, results) => {
             let resultsArray = results.rows.map(result => result.title)
             pool.query(`SELECT * FROM employee`, (err, result) => {
                 if (err) throw err;
-                console.log('View all employees');
+                console.log('View all employees: ');
                 console.table(result.rows);
     
                 inquirer.prompt([
                     {
                         type: 'input',
                         name: 'first_name',
-                        message: 'Input employee first name:',
+                        message: 'Input employee first name: ',
                         validate: addFirstName => {
                             if (addFirstName) {
                                 return true;
                             } else {
-                                console.log('Input first name');
+                                console.log('Input first name.');
                                 return false;
                             }
                         }
@@ -155,12 +155,12 @@ inquirer
                     {
                         type: 'input',
                         name: 'last_name',
-                        message: 'Input employee last name:',
+                        message: 'Input employee last name: ',
                         validate: addLastName => {
                             if (addLastName) {
                                 return true;
                             } else {
-                                console.log('Input last name');
+                                console.log('Input last name.');
                                 return false;
                             }
                         }
@@ -168,32 +168,32 @@ inquirer
                     {
                         type: 'list',
                         name: 'role',
-                        message: 'Select employee role:',
+                        message: 'Select employee role: ',
                         choices: resultsArray
                     }, 
                     {
                         type: 'input',
                         name: 'manager',
-                        message: 'Input the employees manager',
+                        message: 'Input the employees manager: ',
                         validate: addManager => {
                             if (addManager) {
                                 return true;
                             } else {
-                                console.log('Input manager');
+                                console.log('Input manager.');
                                 return false;
                             }
                         }
                     }
                 ]).then((answers) => {
                     let roleId = results.rows.filter(result => result.title == answers.role)[0].id;
-                    pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)`, [answers.first_name, answers.last_name, roleId, answers.manager.id], (err, result) => {
+                    let managerId = parseInt(answers.manager);
+                    pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)`, [answers.first_name, answers.last_name, roleId, managerId], (err, result) => {
                         if (err) throw err;
                         console.log(`${answers.first_name} ${answers.last_name} added to the database.`)
                         employeeDB();
                     });
                 });
             });
-    
         })
 
     } else if (answers.prompt === 'Update an employee role') {
@@ -204,32 +204,28 @@ inquirer
 
             pool.query(`SELECT * FROM roles`, (err, result) => {
                 if (err) throw err;
-                // console.log('View all roles');
-                // console.table(result.rows);
                 let resultsRolesArray = result.rows.map(role => role.title)
 
                 inquirer.prompt([
                     {
                         type: 'list',
                         name: 'employee',
-                        message: 'Choose an employee to update',
+                        message: 'Choose an employee to update:',
                         choices: resultsEmployeeArray
                     },
                     {
                         type: 'list',
                         name: 'role',
-                        message: 'Select a new role for the employee',
+                        message: 'Select a new role for the employee:',
                         choices: resultsRolesArray
-
                     }
                 ]).then((answers) => {
-                    let [firstName, lastName] = answers.empoyee.split(" ");
+                    let [firstName, lastName] = answers.employee.split(" ");
                     let roleId = result.rows.filter(role => role.title == answers.role)[0].id;
                     let employeeName = answers.employee;
                     pool.query(`UPDATE employee SET role_id = $1 WHERE first_name = $2 AND last_name = $3`, [roleId, firstName, lastName], (err, result) => {
-
                         if (err) throw err;
-                        console.log(`${employeeName} has been updated`);
+                        console.log(`${employeeName} has been updated.`);
                         employeeDB();
                     });
                 });
@@ -237,7 +233,7 @@ inquirer
         })
     } else if (answers.prompt === 'Log out') {
         pool.end();
-        console.log('Logged out');
+        console.log('Logged out.');
     }
 }); 
 };
