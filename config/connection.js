@@ -9,7 +9,4 @@ const pool = new Pool({
 
 
 
-// fetchRoles();
-
-
 module.exports = { pool };

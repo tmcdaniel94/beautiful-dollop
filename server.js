@@ -198,54 +198,43 @@ inquirer
 
     } else if (answers.prompt === 'Update an employee role') {
 
-        pool.query(`SELECT * FROM employee`, (err, result) => {
-            let resultsArray = results.rows.map(result => result.title)
+        pool.query(`SELECT first_name, last_name FROM employee`, (err, results) => {
+            if (err) throw err;
+            let resultsEmployeeArray = results.rows.map(result => `${result.first_name} ${result.last_name}`);
 
             pool.query(`SELECT * FROM roles`, (err, result) => {
+                if (err) throw err;
+                // console.log('View all roles');
+                // console.table(result.rows);
+                let resultsRolesArray = result.rows.map(role => role.title)
+
                 inquirer.prompt([
                     {
                         type: 'list',
                         name: 'employee',
                         message: 'Choose an employee to update',
-                        choices: resultsArray
+                        choices: resultsEmployeeArray
                     },
                     {
                         type: 'list',
                         name: 'role',
                         message: 'Select a new role for the employee',
-                        choices: () => {
-                            const array = [];
-                            for (var i = 0; i < result.length; i++) {
-                                array.push(result[i].title);
-                        }
-                            const roleArray = [...new Set(array)];
-                            return roleArray;
-                        }
+                        choices: resultsRolesArray
+
                     }
                 ]).then((answers) => {
-                    let roleId = results.rows.filter(result => result.title == answers.role)[0].id;
-                    pool.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)`, [answers.first_name, answers.last_name, roleId, answers.manager.id], (err, result) => {
+                    let [firstName, lastName] = answers.empoyee.split(" ");
+                    let roleId = result.rows.filter(role => role.title == answers.role)[0].id;
+                    let employeeName = answers.employee;
+                    pool.query(`UPDATE employee SET role_id = $1 WHERE first_name = $2 AND last_name = $3`, [roleId, firstName, lastName], (err, result) => {
 
-                    // for (var i = 0; i < result.length; i++) {
-                    //     if (result[i].last_name === answers.employee) {
-                    //         var name = result[i];
-                    //     }
-                    // }
-    
-                    // for (var i = 0; i < result.length; i++) {
-                    //     if (result[i].title === answers.role) {
-                    //         var role = result[i];
-                    //     }
-                    // }
-                    pool.query(`UPDATE employee SET ? WHERE ?`,  [{role_id: role}, {last_name: name}], (err, result) => {
                         if (err) throw err;
-                        console.log(`${answers.employee} has been updated`);
+                        console.log(`${employeeName} has been updated`);
                         employeeDB();
                     });
                 });
             });
         })
-    })
     } else if (answers.prompt === 'Log out') {
         pool.end();
         console.log('Logged out');
