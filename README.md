@@ -12,8 +12,9 @@ Users can view, add, and update information about their employees, as well as cr
 ## License
 MIT
 
-## Demo and Screenshots
-
+## Demo
+To see this code in action, enjoy the following video: 
+[Link to Demo](https://drive.google.com/file/d/1Q6J-r-TMtlEj5azbX5JNYl4xxB6E_bvZ/view?usp=drive_link)
 
 ## Link to Repository
 https://github.com/tmcdaniel94/beautiful-dollop
